@@ -1,8 +1,15 @@
-{
-  "extends": "next/core-web-vitals",
-  "rules": {
-    "@typescript-eslint/no-unused-vars": "off",
-    "@typescript-eslint/no-explicit-any": "off",
-    "react/no-unescaped-entities": "off"
-  }
+'use client';
+
+import './globals.css';
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <html lang="de">
+      <body className="bg-slate-900">{children}</body>
+    </html>
+  );
 }
