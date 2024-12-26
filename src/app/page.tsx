@@ -6,7 +6,7 @@ import {
   Moon, Car, BookOpen, Home, 
   Heart, Target, CheckCircle,
   Menu, X, Info, Bell, Settings,
-  Plus
+  Plus, Clock, AlertTriangle
 } from 'lucide-react';
 
 // Einfache Alert-Komponente
@@ -51,6 +51,67 @@ const carOptions: CarOption[] = [
 const defaultHabits: Habit[] = [
   { id: 1, name: "Energy Drinks", cost: 90 },
   { id: 2, name: "Zigaretten", cost: 200 }
+];
+
+// Tagesplan Struktur
+const dailySchedule = [
+  {
+    blockTitle: "Früher Morgen",
+    activities: [
+      { time: "05:00 - 05:05", title: "Aufwachen und Bittgebet (Du'a)" },
+      { time: "05:05 - 05:10", title: "Kalte Dusche (Belebend, gut für den Kreislauf)" },
+      { time: "05:10 - 05:15", title: "Rückenschonende Dehnübungen" },
+      { time: "05:15 - 05:25", title: "Wudu (Gebetswaschung) für das Morgengebet (Fajr)" },
+      { time: "05:25 - 05:35", title: "Fajr-Gebet" },
+      { time: "05:35 - 05:50", title: "Koran lesen (z.B. 2 Seiten), Hadith studieren" },
+      { time: "05:50 - 06:00", title: "Tagesplanung / Journaling" },
+    ]
+  },
+  {
+    blockTitle: "Vormittag",
+    activities: [
+      { time: "06:00 - 06:30", title: "Frühstück (bzw. Suhur, falls Ramadan)" },
+      { time: "06:30 - 08:00", title: "Freizeit: Lesen, kurze Sporteinheit" },
+      { time: "08:00 - 08:15", title: "Wudu oder Vorbereitung auf Arbeit" },
+      { time: "08:15 - 08:30", title: "Check E-Mails / Arbeitsvorbereitung" },
+    ]
+  },
+  {
+    blockTitle: "Arbeitszeit",
+    activities: [
+      { time: "08:30 - 12:00", title: "Arbeit: Fokus, Aufgaben erledigen" },
+      { time: "12:00 - 12:05", title: "Wudu für Dhuhr" },
+      { time: "12:05 - 12:15", title: "Dhuhr-Gebet" },
+      { time: "12:15 - 12:45", title: "Mittagspause - während Ramadan: Koran lesen" },
+      { time: "12:45 - 13:00", title: "Dehnübungen / Spaziergang" },
+      { time: "13:00 - 16:15", title: "Arbeit fortsetzen" },
+      { time: "16:15 - 16:20", title: "Wudu für Asr" },
+      { time: "16:20 - 16:30", title: "Asr-Gebet" },
+    ]
+  },
+  {
+    blockTitle: "Nach der Arbeit",
+    activities: [
+      { time: "16:30 - 17:00", title: "Tagesreview + Finanzcheck" },
+      { time: "17:00 - 18:00", title: "Fitnessstudio / Sport" },
+      { time: "18:00 - 18:05", title: "Wudu für Maghrib" },
+      { time: "18:05 - 18:15", title: "Maghrib-Gebet" },
+      { time: "18:15 - 19:00", title: "Essen / Kochen" },
+      { time: "19:00 - 19:30", title: "Koran oder Hadithe lesen" },
+      { time: "19:30 - 20:00", title: "Berufliche Weiterbildung" },
+    ]
+  },
+  {
+    blockTitle: "Abend",
+    activities: [
+      { time: "20:00 - 20:05", title: "Wudu für Isha" },
+      { time: "20:05 - 20:15", title: "Isha-Gebet" },
+      { time: "20:15 - 21:30", title: "Freizeit (Anime, Familie)" },
+      { time: "21:30 - 22:00", title: "Rückenschonende Übungen, Dusche" },
+      { time: "22:00 - 22:10", title: "Plan für morgen checken / Du'a" },
+      { time: "22:10 - 05:00", title: "Schlaf (7-8 Stunden)" },
+    ]
+  }
 ];
 
 const Navigation = ({ 
@@ -236,6 +297,157 @@ const HabitManager = ({
   );
 };
 
+// Helfer-Funktion für die Zeitberechnung
+const getTaskStatus = (timeString: string): 'upcoming' | 'ongoing' | 'missed' | 'completed' => {
+  const now = new Date();
+  const [startTime, endTime] = timeString.split('-').map(t => {
+    const [hours, minutes] = t.trim().split(':').map(Number);
+    const date = new Date();
+    date.setHours(hours, minutes, 0);
+    return date;
+  });
+
+  if (now < startTime) return 'upcoming';
+  if (now >= startTime && now <= endTime) return 'ongoing';
+  return 'missed';
+};
+
+// TaskCard Komponente für einzelne Aufgaben
+const TaskCard = ({ 
+  task, 
+  status 
+}: { 
+  task: { time: string; title: string; }; 
+  status: 'upcoming' | 'ongoing' | 'missed' | 'completed';
+}) => {
+  const statusStyles = {
+    upcoming: 'border-emerald-600/30 bg-emerald-900/10',
+    ongoing: 'border-yellow-600/30 bg-yellow-900/10',
+    missed: 'border-red-600/30 bg-red-900/10',
+    completed: 'border-blue-600/30 bg-blue-900/10'
+  };
+
+  const statusIcons = {
+    upcoming: <Clock className="w-5 h-5 text-emerald-400" />,
+    ongoing: <Zap className="w-5 h-5 text-yellow-400" />,
+    missed: <AlertTriangle className="w-5 h-5 text-red-400" />,
+    completed: <CheckCircle className="w-5 h-5 text-blue-400" />
+  };
+
+  return (
+    <div className={`p-4 rounded-lg border ${statusStyles[status]} relative group hover:scale-102 transition-all duration-200`}>
+      <div className="flex justify-between items-start">
+        <div className="flex-1">
+          <div className="flex items-center space-x-2">
+            {statusIcons[status]}
+            <span className="font-semibold text-sm text-gray-300">{task.time}</span>
+          </div>
+          <p className="mt-1 text-white">{task.title}</p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// DayProgress Komponente für die Tagesübersicht
+const DayProgress = ({ 
+  schedule,
+  onMarkCompleted
+}: { 
+  schedule: typeof dailySchedule;
+  onMarkCompleted: (taskId: string) => void;
+}) => {
+  const [selectedStatus, setSelectedStatus] = useState<'all' | 'missed' | 'upcoming' | 'ongoing'>('all');
+  
+  // Berechne die Statistiken für den Tag
+  const stats = schedule.reduce((acc, block) => {
+    block.activities.forEach(activity => {
+      const status = getTaskStatus(activity.time);
+      acc[status] = (acc[status] || 0) + 1;
+    });
+    return acc;
+  }, {} as Record<string, number>);
+
+  const filterTasks = (status: typeof selectedStatus) => {
+    return schedule.flatMap(block => 
+      block.activities
+        .map(activity => ({
+          ...activity,
+          status: getTaskStatus(activity.time)
+        }))
+        .filter(activity => 
+          status === 'all' || activity.status === status
+        )
+    );
+  };
+
+  return (
+    <div className="bg-slate-800/50 rounded-lg p-6 backdrop-blur-sm">
+      <h2 className="text-2xl font-bold mb-6 text-emerald-300">Tagesübersicht</h2>
+      
+      {/* Statistik-Karten */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div className="bg-emerald-900/30 p-4 rounded-lg">
+          <div className="flex items-center justify-between">
+            <span className="text-emerald-300">Anstehend</span>
+            <Clock className="w-5 h-5 text-emerald-400" />
+          </div>
+          <p className="text-2xl font-bold text-white mt-2">{stats.upcoming || 0}</p>
+        </div>
+        <div className="bg-yellow-900/30 p-4 rounded-lg">
+          <div className="flex items-center justify-between">
+            <span className="text-yellow-300">Aktuell</span>
+            <Zap className="w-5 h-5 text-yellow-400" />
+          </div>
+          <p className="text-2xl font-bold text-white mt-2">{stats.ongoing || 0}</p>
+        </div>
+        <div className="bg-red-900/30 p-4 rounded-lg">
+          <div className="flex items-center justify-between">
+            <span className="text-red-300">Verpasst</span>
+            <AlertTriangle className="w-5 h-5 text-red-400" />
+          </div>
+          <p className="text-2xl font-bold text-white mt-2">{stats.missed || 0}</p>
+        </div>
+        <div className="bg-blue-900/30 p-4 rounded-lg">
+          <div className="flex items-center justify-between">
+            <span className="text-blue-300">Erledigt</span>
+            <CheckCircle className="w-5 h-5 text-blue-400" />
+          </div>
+          <p className="text-2xl font-bold text-white mt-2">{stats.completed || 0}</p>
+        </div>
+      </div>
+
+      {/* Filter-Tabs */}
+      <div className="flex space-x-2 mb-6">
+        {(['all', 'missed', 'ongoing', 'upcoming'] as const).map(status => (
+          <button
+            key={status}
+            onClick={() => setSelectedStatus(status)}
+            className={`px-4 py-2 rounded-lg transition-colors ${
+              selectedStatus === status 
+                ? 'bg-emerald-600 text-white' 
+                : 'bg-emerald-900/30 text-emerald-200 hover:bg-emerald-800/30'
+            }`}
+          >
+            {status.charAt(0).toUpperCase() + status.slice(1)}
+          </button>
+        ))}
+      </div>
+
+      {/* Aufgaben-Liste */}
+      <div className="space-y-3">
+        {filterTasks(selectedStatus).map((task, index) => (
+          <TaskCard
+            key={index}
+            task={task}
+            status={task.status}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
+
 export default function Page() {
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
   const [prayerTimes, setPrayerTimes] = useState<Record<string, string> | null>(null);
@@ -276,12 +488,22 @@ export default function Page() {
       />
 
       <main className="max-w-6xl mx-auto px-4 pt-20 pb-8">
-        <HabitManager 
-          habits={habits}
-          setHabits={setHabits}
-          newHabit={newHabit}
-          setNewHabit={setNewHabit}
-        />
+        {activeTab === "home" && (
+          <div className="space-y-6">
+            <DayProgress 
+              schedule={dailySchedule}
+              onMarkCompleted={(taskId) => {
+                // Implementiere die Logik für das Abhaken von Aufgaben
+              }}
+            />
+            <HabitManager 
+              habits={habits}
+              setHabits={setHabits}
+              newHabit={newHabit}
+              setNewHabit={setNewHabit}
+            />
+          </div>
+        )}
       </main>
     </div>
   );
